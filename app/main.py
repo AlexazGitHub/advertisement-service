@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
+from datetime import datetime
 
 from app import models, schemas, crud
 from app.database import engine, get_db
@@ -45,6 +46,8 @@ def search_advertisements(
     description: Optional[str] = None,
     price: Optional[float] = None,
     author: Optional[str] = None,
+    created_at_from: Optional[datetime] = None,
+    created_at_to: Optional[datetime] = None,
     db: Session = Depends(get_db),
 ):
-    return crud.search_advertisements(db, title, description, price, author)
+    return crud.search_advertisements(db, title, description, price, author, created_at_from, created_at_to)

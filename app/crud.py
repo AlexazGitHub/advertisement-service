@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app import models, schemas
+from datetime import datetime
 
 
 def create_advertisement(db: Session, advertisement: schemas.AdvertisementCreate):
@@ -38,7 +39,8 @@ def delete_advertisement(db: Session, advertisement_id: int):
 
 
 def search_advertisements(db: Session, title: str = None, description: str = None,
-                           price: float = None, author: str = None):
+                           price: float = None, author: str = None,
+                           created_at_from: datetime = None, created_at_to: datetime = None):
     query = db.query(models.Advertisement)
     if title is not None:
         query = query.filter(models.Advertisement.title.ilike(f"%{title}%"))
@@ -48,4 +50,8 @@ def search_advertisements(db: Session, title: str = None, description: str = Non
         query = query.filter(models.Advertisement.price == price)
     if author is not None:
         query = query.filter(models.Advertisement.author.ilike(f"%{author}%"))
+    if created_at_from is not None:
+        query = query.filter(models.Advertisement.created_at >= created_at_from)
+    if created_at_to is not None:
+        query = query.filter(models.Advertisement.created_at <= created_at_to)
     return query.all()
