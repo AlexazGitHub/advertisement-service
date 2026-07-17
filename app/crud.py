@@ -1,10 +1,12 @@
-from sqlalchemy.orm import Session
-from app import models, schemas
 from datetime import datetime
+from sqlalchemy.orm import Session
+from app import models, schemas, auth
 
 
-def create_advertisement(db: Session, advertisement: schemas.AdvertisementCreate):
-    db_advertisement = models.Advertisement(**advertisement.model_dump())
+# ---------- Advertisement ----------
+
+def create_advertisement(db: Session, advertisement: schemas.AdvertisementCreate, owner_id: int = None):
+    db_advertisement = models.Advertisement(**advertisement.model_dump(), owner_id=owner_id)
     db.add(db_advertisement)
     db.commit()
     db.refresh(db_advertisement)
@@ -55,3 +57,52 @@ def search_advertisements(db: Session, title: str = None, description: str = Non
     if created_at_to is not None:
         query = query.filter(models.Advertisement.created_at <= created_at_to)
     return query.all()
+
+
+# ---------- User ----------
+
+def get_user(db: Session, user_id: int):
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+
+def get_user_by_username(db: Session, username: str):
+    return db.query(models.User).filter(models.User.username == username).first()
+
+
+def get_users(db: Session):
+    return db.query(models.User).all()
+
+
+def create_user(db: Session, user: schemas.UserCreate):
+    db_user = models.User(
+        username=user.username,
+        hashed_password=auth.hash_password(user.password),
+        group=user.group,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def update_user(db: Session, user_id: int, user: schemas.UserUpdate):
+    db_user = get_user(db, user_id)
+    if db_user is None:
+        return None
+    update_data = user.model_dump(exclude_unset=True)
+    if "password" in update_data:
+        update_data["hashed_password"] = auth.hash_password(update_data.pop("password"))
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def delete_user(db: Session, user_id: int):
+    db_user = get_user(db, user_id)
+    if db_user is None:
+        return None
+    db.delete(db_user)
+    db.commit()
+    return db_user
