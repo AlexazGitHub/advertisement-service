@@ -34,6 +34,16 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db, user)
 
 
+@app.get("/user", response_model=list[schemas.UserResponse])
+def list_users(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user_required),
+):
+    if current_user.group != "admin":
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    return crud.get_users(db)
+
+
 @app.get("/user/{user_id}", response_model=schemas.UserResponse)
 def read_user(user_id: int, db: Session = Depends(get_db)):
     db_user = crud.get_user(db, user_id)
